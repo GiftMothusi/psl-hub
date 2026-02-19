@@ -18,10 +18,14 @@ export default function Matches() {
         <p className="text-gray-600 mt-1">Betway Premiership 2025/26</p>
         <div className="gold-line w-32 mt-4" />
       </div>
-      <div className="flex gap-1 mb-8 bg-psl-navy/50 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 mb-8 bg-gray-100 p-1 rounded-xl w-fit shadow-inner">
         {['results', 'upcoming'].map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-6 py-2.5 rounded-lg text-sm font-semibold capitalize transition-all ${tab === t ? 'bg-psl-gold text-white shadow-lg' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`px-6 py-2.5 rounded-lg text-sm font-semibold capitalize transition-all ${
+              tab === t 
+                ? 'bg-white text-psl-gold shadow-sm border border-psl-gold/20' 
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
           >{t}</button>
         ))}
       </div>
@@ -38,11 +42,11 @@ export default function Matches() {
                 <img src={m.home_team_logo} alt="" className="w-10 h-10 flex-shrink-0 logo-glow" />
               </div>
               {m.status === 'FT' ? (
-                <div className="flex-shrink-0 px-5 py-2 rounded-xl bg-psl-dark/80 border border-white/5 min-w-[90px] text-center">
+                <div className="flex-shrink-0 px-5 py-2 rounded-xl bg-gray-100 border border-gray-200 min-w-[90px] text-center shadow-sm">
                   <span className="score-text text-3xl text-gray-900">{m.home_goals}</span>
                   <span className="text-gray-600 mx-2 text-sm">-</span>
                   <span className="score-text text-3xl text-gray-900">{m.away_goals}</span>
-                  <div className="text-[10px] text-green-400 mt-0.5 font-semibold">FT</div>
+                  <div className="text-[10px] text-green-600 mt-0.5 font-semibold">FT</div>
                 </div>
               ) : (
                 <div className="flex-shrink-0 px-5 py-3 rounded-xl bg-psl-gold/10 border border-psl-gold/20 min-w-[90px] text-center">

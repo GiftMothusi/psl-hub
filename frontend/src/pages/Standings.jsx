@@ -43,22 +43,22 @@ export default function Standings() {
                     <td className="px-3 py-3">
                       <Link to={`/teams/${s.team_id}`} className="flex items-center gap-3 group">
                         <img src={s.team_logo} alt="" className="w-7 h-7 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-medium text-white group-hover:text-psl-gold transition-colors">{s.team_name}</span>
+                        <span className="text-sm font-medium text-gray-900 group-hover:text-psl-gold transition-colors">{s.team_name}</span>
                       </Link>
                     </td>
-                    <td className="text-center px-3 py-3 text-sm text-gray-400">{s.played}</td>
-                    <td className="text-center px-3 py-3 text-sm text-gray-400">{s.wins}</td>
-                    <td className="text-center px-3 py-3 text-sm text-gray-400">{s.draws}</td>
-                    <td className="text-center px-3 py-3 text-sm text-gray-400">{s.losses}</td>
-                    <td className="text-center px-3 py-3 text-sm text-gray-400 hidden md:table-cell">{s.goals_for}</td>
-                    <td className="text-center px-3 py-3 text-sm text-gray-400 hidden md:table-cell">{s.goals_against}</td>
+                    <td className="text-center px-3 py-3 text-sm text-gray-600">{s.played}</td>
+                    <td className="text-center px-3 py-3 text-sm text-gray-600">{s.wins}</td>
+                    <td className="text-center px-3 py-3 text-sm text-gray-600">{s.draws}</td>
+                    <td className="text-center px-3 py-3 text-sm text-gray-600">{s.losses}</td>
+                    <td className="text-center px-3 py-3 text-sm text-gray-600 hidden md:table-cell">{s.goals_for}</td>
+                    <td className="text-center px-3 py-3 text-sm text-gray-600 hidden md:table-cell">{s.goals_against}</td>
                     <td className="text-center px-3 py-3">
-                      <span className={`text-sm font-medium ${s.goal_difference > 0 ? 'text-green-400' : s.goal_difference < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                      <span className={`text-sm font-medium ${s.goal_difference > 0 ? 'text-green-600' : s.goal_difference < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                         {s.goal_difference > 0 ? '+' : ''}{s.goal_difference}
                       </span>
                     </td>
                     <td className="text-center px-3 py-3">
-                      <span className="text-sm font-bold text-white bg-white/5 px-2.5 py-1 rounded-md">{s.points}</span>
+                      <span className="text-sm font-bold text-gray-900">{s.points}</span>
                     </td>
                   </tr>
                 );

@@ -22,7 +22,7 @@ export default function Teams() {
           return (
             <Link key={team.id} to={`/teams/${team.id}`} className="group relative overflow-hidden rounded-2xl">
               <div className="absolute inset-0 opacity-30 group-hover:opacity-50 transition-opacity" style={{ background: `linear-gradient(145deg, ${c1}, ${c2})` }} />
-              <div className="absolute inset-0 bg-psl-dark/60 group-hover:bg-psl-dark/40 transition-all" />
+              <div className="absolute inset-0 bg-gray-900/20 group-hover:bg-gray-900/10 transition-all" />
               <div className="relative z-10 p-6 flex flex-col items-center text-center h-[220px] justify-center">
                 <img src={team.logo_url} alt={team.name} className="w-20 h-20 mb-4 group-hover:scale-110 transition-transform duration-300 logo-glow" />
                 <h3 className="font-display text-lg tracking-wider text-gray-900 group-hover:text-psl-gold transition-colors">{team.name}</h3>

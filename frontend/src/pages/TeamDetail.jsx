@@ -187,11 +187,13 @@ export default function TeamDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-psl-navy/50 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit shadow-inner">
         {['overview', 'roster', 'analytics', 'history'].map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-5 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${
-              tab === t ? 'bg-psl-gold text-psl-dark shadow-lg' : 'text-gray-400 hover:text-white'
+              tab === t 
+                ? 'bg-white text-psl-gold shadow-sm border border-psl-gold/20' 
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >{t}</button>
         ))}

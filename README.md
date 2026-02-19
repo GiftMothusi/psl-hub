@@ -1,6 +1,6 @@
 # PSL Hub v3.0 — Betway Premiership 2025/26
 
-Production-grade South African Premier Soccer League web application. Zero API keys required.
+A Revamp of the South African Premier Soccer League website using modern UX/UI design. Zero API keys required.
 
 ## Features
 
