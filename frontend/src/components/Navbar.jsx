@@ -18,7 +18,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3 group">
-            <img src="/psl_favicon.png" alt="PSL Hub" className="h-16 w-auto" />
+            <img src="/psl_logo.png" alt="PSL Hub" className="h-16 w-auto" />
           <div className="hidden sm:block">
             <div className="text-[10px] text-psl-gold/70 tracking-[0.3em] uppercase">Betway Premiership 2025/26</div>
           </div>
