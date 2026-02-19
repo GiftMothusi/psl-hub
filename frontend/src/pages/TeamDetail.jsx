@@ -2,15 +2,24 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useFetch } from '../hooks/useFetch';
+import FormStrip from '../components/FormStrip';
+import SeasonHeatmap from '../components/SeasonHeatmap';
+
 
 function StatBar({ label, value, max = 99 }) {
   const pct = Math.min(100, (value / max) * 100);
-  const color = pct >= 70 ? 'from-green-500 to-emerald-400' : pct >= 45 ? 'from-yellow-500 to-amber-400' : 'from-red-500 to-orange-400';
+  const color =
+    pct >= 70 ? 'from-green-500 to-emerald-400' :
+    pct >= 45 ? 'from-yellow-500 to-amber-400' :
+               'from-red-500 to-orange-400';
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs text-gray-600 w-28 shrink-0">{label}</span>
       <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-        <div className={`h-full bg-gradient-to-r ${color} rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
+        <div
+          className={`h-full bg-gradient-to-r ${color} rounded-full transition-all duration-700`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <span className="text-sm font-bold text-gray-900 w-10 text-right">{value}</span>
     </div>
@@ -24,10 +33,10 @@ function AnalyticsPanel({ analytics, standing }) {
       <h3 className="font-display text-xl tracking-wider text-gray-900 mb-5">Season Analytics</h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Win Rate', value: `${analytics.win_rate}%`, color: analytics.win_rate >= 50 ? 'text-green-600' : 'text-gray-900' },
-          { label: 'Pts/Game', value: analytics.points_per_game, color: 'text-psl-gold' },
-          { label: 'Goals/Game', value: analytics.goals_per_game, color: 'text-gray-900' },
-          { label: 'Projected Pts', value: analytics.projected_points, color: 'text-psl-gold' },
+          { label: 'Win Rate',     value: `${analytics.win_rate}%`, color: analytics.win_rate >= 50 ? 'text-green-600' : 'text-gray-900' },
+          { label: 'Pts/Game',     value: analytics.points_per_game, color: 'text-psl-gold' },
+          { label: 'Goals/Game',   value: analytics.goals_per_game,  color: 'text-gray-900' },
+          { label: 'Projected Pts',value: analytics.projected_points, color: 'text-psl-gold' },
         ].map((s, i) => (
           <div key={i} className="text-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
             <div className="text-[10px] tracking-[0.15em] text-gray-600 uppercase">{s.label}</div>
@@ -37,8 +46,8 @@ function AnalyticsPanel({ analytics, standing }) {
       </div>
       <div className="space-y-3">
         <StatBar label="Form Rating" value={analytics.form_rating} />
-        <StatBar label="Attack" value={analytics.attack_rating} />
-        <StatBar label="Defense" value={analytics.defense_rating} />
+        <StatBar label="Attack"      value={analytics.attack_rating} />
+        <StatBar label="Defense"     value={analytics.defense_rating} />
       </div>
       <div className="mt-5 grid grid-cols-3 gap-3">
         <div className="text-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
@@ -72,14 +81,14 @@ function RosterPanel({ roster, teamId }) {
     );
   }
 
-  const positions = ['Goalkeeper', 'Centre-Back', 'Left-Back', 'Right-Back', 'Defensive Midfield', 'Central Midfield', 'Attacking Midfield', 'Right Midfield', 'Left Winger', 'Right Winger', 'Centre-Forward'];
-  const grouped = {};
   const posCategory = (pos) => {
     if (/goal/i.test(pos)) return 'Goalkeepers';
     if (/back|centre-b/i.test(pos)) return 'Defenders';
     if (/mid/i.test(pos)) return 'Midfielders';
     return 'Forwards';
   };
+
+  const grouped = {};
   roster.forEach(p => {
     const cat = posCategory(p.position);
     if (!grouped[cat]) grouped[cat] = [];
@@ -94,21 +103,34 @@ function RosterPanel({ roster, teamId }) {
       </div>
       {Object.entries(grouped).map(([category, players]) => (
         <div key={category} className="mb-6 last:mb-0">
-          <h4 className="text-xs uppercase tracking-[0.2em] text-psl-gold/70 font-semibold mb-3 pb-2 border-b border-white/5">{category}</h4>
+          <h4 className="text-xs uppercase tracking-[0.2em] text-psl-gold/70 font-semibold mb-3 pb-2 border-b border-white/5">
+            {category}
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {players.map((p, i) => (
-              <Link key={i} to={p.id ? `/players/${p.id}` : '#'}
+              <Link
+                key={i}
+                to={p.id ? `/players/${p.id}` : '#'}
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.03] hover:border-psl-gold/20 hover:bg-white/[0.04] transition-all group"
               >
                 {p.photo_url ? (
-                  <img src={p.photo_url} alt={p.name} className="w-10 h-10 rounded-full object-cover bg-psl-card" onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                  <img
+                    src={p.photo_url}
+                    alt={p.name}
+                    className="w-10 h-10 rounded-full object-cover bg-psl-card"
+                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                  />
                 ) : null}
                 <div className={`w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 ${p.photo_url ? 'hidden' : ''}`}>
                   {p.number !== '-' ? `#${p.number}` : p.name.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 group-hover:text-psl-gold transition-colors truncate">{p.name}</div>
-                  <div className="text-xs text-gray-600">{p.position}{p.age ? `, ${p.age} yrs` : ''}{p.nationality ? ` · ${p.nationality}` : ''}</div>
+                  <div className="text-sm font-medium text-gray-900 group-hover:text-psl-gold transition-colors truncate">
+                    {p.name}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {p.position}{p.age ? `, ${p.age} yrs` : ''}{p.nationality ? ` · ${p.nationality}` : ''}
+                  </div>
                 </div>
                 {p.market_value && p.market_value !== '-' && (
                   <span className="text-xs text-psl-gold/60 shrink-0">{p.market_value}</span>
@@ -125,27 +147,40 @@ function RosterPanel({ roster, teamId }) {
 export default function TeamDetail() {
   const { teamId } = useParams();
   const [tab, setTab] = useState('overview');
-  const { data: team, loading } = useFetch(() => api.getTeam(teamId), [teamId]);
-  const { data: rosterData } = useFetch(() => api.getTeamRoster(teamId), [teamId]);
-  const { data: matchData } = useFetch(() => api.getMatches(`team_id=${teamId}`), [teamId]);
 
-  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-psl-gold border-t-transparent rounded-full animate-spin" /></div>;
+  const { data: team, loading } = useFetch(() => api.getTeam(teamId), [teamId]);
+  const { data: rosterData }    = useFetch(() => api.getTeamRoster(teamId), [teamId]);
+  const { data: matchData }     = useFetch(() => api.getMatches(`team_id=${teamId}`), [teamId]);
+  const { data: allMatchData }  = useFetch(() => api.getMatches(), []);
+
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <div className="w-8 h-8 border-2 border-psl-gold border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
   if (!team) return <div className="text-center py-20 text-gray-600">Team not found</div>;
 
   const c1 = team.colors?.[0] || '#333';
   const c2 = team.colors?.[1] || '#666';
   const standing = team.standing || {};
   const analytics = team.analytics || {};
+
+  const formData = team.form || {};
+  const form = formData.last_5 || [];
+  const momentum = formData.momentum || '';
+
   const roster = rosterData?.players || [];
   const matches = matchData?.matches || [];
+  const allMatches = allMatchData?.matches || [];
+
   const results = matches.filter(m => m.status === 'FT').slice(0, 6);
   const upcoming = matches.filter(m => m.status === 'NS').slice(0, 4);
+
   const trophies = team.trophies || {};
   const totalTrophies = Object.values(trophies).reduce((s, v) => s + v, 0);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Hero banner */}
       <div className="relative overflow-hidden rounded-2xl h-[260px] md:h-[300px] mb-6">
         <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${c1}CC, ${c2}88, #0A0E17)` }} />
         <div className="absolute inset-0 bg-psl-dark/30" />
@@ -156,7 +191,9 @@ export default function TeamDetail() {
           <div className="flex items-center gap-6">
             <img src={team.logo_url} alt={team.name} className="w-24 h-24 md:w-28 md:h-28 logo-glow" />
             <div>
-              <h1 className="font-display text-4xl md:text-6xl tracking-wider text-gray-900">{team.name}</h1>
+              <h1 className="font-display text-4xl md:text-6xl tracking-wider text-gray-900">
+                {team.name}
+              </h1>
               <p className="text-base text-gray-600 mt-1">{team.nickname}</p>
               <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-sm text-gray-600">
                 <span>{team.stadium} ({team.capacity?.toLocaleString()} seats)</span>
@@ -164,20 +201,28 @@ export default function TeamDetail() {
                 <span>Est. {team.founded}</span>
                 <span>Coach: {team.coach}</span>
               </div>
+
+              {form.length > 0 && (
+                <div className="flex items-center gap-3 mt-3">
+                  <FormStrip form={form} size="md" showLabel />
+                  {momentum && (
+                    <span className="text-xs font-semibold text-psl-gold/80">{momentum}</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Key stats strip */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-6">
         {[
-          { l: 'Position', v: standing.rank ? `#${standing.rank}` : '-', c: standing.rank <= 3 ? 'text-psl-gold' : 'text-white' },
-          { l: 'Points', v: standing.points ?? '-', c: 'text-psl-gold' },
-          { l: 'Played', v: standing.played ?? '-', c: 'text-white' },
-          { l: 'Squad Value', v: team.squad_value || '-', c: 'text-white' },
-          { l: 'Avg Age', v: team.avg_age || '-', c: 'text-white' },
-          { l: 'Trophies', v: totalTrophies, c: totalTrophies > 0 ? 'text-psl-gold' : 'text-gray-500' },
+          { l: 'Position',   v: standing.rank ? `#${standing.rank}` : '-', c: standing.rank <= 3 ? 'text-psl-gold' : 'text-psl-gold' },
+          { l: 'Points',     v: standing.points ?? '-',    c: 'text-psl-gold' },
+          { l: 'Played',     v: standing.played ?? '-',    c: 'text-psl-gold' },
+          { l: 'Squad Value',v: team.squad_value || '-',   c: 'text-psl-gold' },
+          { l: 'Avg Age',    v: team.avg_age || '-',       c: 'text-psl-gold' },
+          { l: 'Trophies',   v: totalTrophies,             c: totalTrophies > 0 ? 'text-psl-gold' : 'text-psl-gold' },
         ].map((s, i) => (
           <div key={i} className="glass-card p-3 text-center">
             <div className="text-[9px] tracking-[0.15em] uppercase text-gray-500 font-semibold">{s.l}</div>
@@ -186,24 +231,25 @@ export default function TeamDetail() {
         ))}
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit shadow-inner">
         {['overview', 'roster', 'analytics', 'history'].map(t => (
-          <button key={t} onClick={() => setTab(t)}
+          <button
+            key={t}
+            onClick={() => setTab(t)}
             className={`px-5 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${
-              tab === t 
-                ? 'bg-white text-psl-gold shadow-sm border border-psl-gold/20' 
+              tab === t
+                ? 'bg-white text-psl-gold shadow-sm border border-psl-gold/20'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
-          >{t}</button>
+          >
+            {t}
+          </button>
         ))}
       </div>
 
-      {/* Tab content */}
       {tab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
-            {/* Recent Results */}
             <div className="glass-card p-6">
               <h3 className="font-display text-xl tracking-wider text-white mb-4">Recent Results</h3>
               {results.length > 0 ? (
@@ -211,20 +257,22 @@ export default function TeamDetail() {
                   {results.map((m, i) => (
                     <div key={i} className="match-card px-4 py-3 flex items-center gap-3">
                       <img src={m.home_team_logo} alt="" className="w-6 h-6" />
-                      <span className="text-xs text-white flex-1 truncate">{m.home_team_name}</span>
+                      <span className="text-xs text-black flex-1 truncate">{m.home_team_name}</span>
                       <div className="px-2 py-1 rounded bg-psl-dark/60">
-                        <span className="score-text text-base text-white">{m.home_goals} - {m.away_goals}</span>
+                        <span className="score-text text-base text-black">{m.home_goals} - {m.away_goals}</span>
                       </div>
-                      <span className="text-xs text-white flex-1 truncate text-right">{m.away_team_name}</span>
+                      <span className="text-xs text-black flex-1 truncate text-right">{m.away_team_name}</span>
                       <img src={m.away_team_logo} alt="" className="w-6 h-6" />
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-gray-500 text-sm">No recent results available</p>}
+              ) : (
+                <p className="text-gray-500 text-sm">No recent results available</p>
+              )}
             </div>
-            {/* Upcoming */}
+
             <div className="glass-card p-6">
-              <h3 className="font-display text-xl tracking-wider text-white mb-4">Upcoming Fixtures</h3>
+              <h3 className="font-display text-xl tracking-wider text-psl-gold mb-4">Upcoming Fixtures</h3>
               {upcoming.length > 0 ? (
                 <div className="space-y-2">
                   {upcoming.map((m, i) => (
@@ -240,9 +288,12 @@ export default function TeamDetail() {
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-gray-500 text-sm">No upcoming fixtures</p>}
+              ) : (
+                <p className="text-gray-500 text-sm">No upcoming fixtures</p>
+              )}
             </div>
           </div>
+
           <div className="space-y-6">
             <AnalyticsPanel analytics={analytics} standing={standing} />
           </div>
@@ -252,43 +303,61 @@ export default function TeamDetail() {
       {tab === 'roster' && <RosterPanel roster={roster} teamId={teamId} />}
 
       {tab === 'analytics' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <AnalyticsPanel analytics={analytics} standing={standing} />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AnalyticsPanel analytics={analytics} standing={standing} />
+            <div className="glass-card p-6">
+              <h3 className="font-display text-xl tracking-wider text-white mb-5">Goal Distribution</h3>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-400">Goals Scored</span>
+                    <span className="text-green-400 font-bold">{standing.goals_for || 0}</span>
+                  </div>
+                  <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full"
+                      style={{ width: `${Math.min(100, (standing.goals_for || 0) / 30 * 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-400">Goals Conceded</span>
+                    <span className="text-red-400 font-bold">{standing.goals_against || 0}</span>
+                  </div>
+                  <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full"
+                      style={{ width: `${Math.min(100, (standing.goals_against || 0) / 30 * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6">
+                <h4 className="text-xs uppercase tracking-[0.15em] text-gray-500 font-semibold mb-3">
+                  Win/Draw/Loss Breakdown
+                </h4>
+                <div className="flex h-4 rounded-full overflow-hidden">
+                  <div className="bg-green-500 transition-all" style={{ width: `${analytics.win_rate || 0}%` }} />
+                  <div className="bg-yellow-500 transition-all" style={{ width: `${analytics.draw_rate || 0}%` }} />
+                  <div className="bg-red-500 transition-all"    style={{ width: `${analytics.loss_rate || 0}%` }} />
+                </div>
+                <div className="flex justify-between mt-2 text-xs text-gray-500">
+                  <span>W {analytics.win_rate}%</span>
+                  <span>D {analytics.draw_rate}%</span>
+                  <span>L {analytics.loss_rate}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="glass-card p-6">
-            <h3 className="font-display text-xl tracking-wider text-white mb-5">Goal Distribution</h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-400">Goals Scored</span>
-                  <span className="text-green-400 font-bold">{standing.goals_for || 0}</span>
-                </div>
-                <div className="h-3 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full" style={{ width: `${Math.min(100, (standing.goals_for || 0) / 30 * 100)}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-400">Goals Conceded</span>
-                  <span className="text-red-400 font-bold">{standing.goals_against || 0}</span>
-                </div>
-                <div className="h-3 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full" style={{ width: `${Math.min(100, (standing.goals_against || 0) / 30 * 100)}%` }} />
-                </div>
-              </div>
-            </div>
-            <div className="mt-6">
-              <h4 className="text-xs uppercase tracking-[0.15em] text-gray-500 font-semibold mb-3">Win/Draw/Loss Breakdown</h4>
-              <div className="flex h-4 rounded-full overflow-hidden">
-                <div className="bg-green-500 transition-all" style={{ width: `${analytics.win_rate || 0}%` }} />
-                <div className="bg-yellow-500 transition-all" style={{ width: `${analytics.draw_rate || 0}%` }} />
-                <div className="bg-red-500 transition-all" style={{ width: `${analytics.loss_rate || 0}%` }} />
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span>W {analytics.win_rate}%</span>
-                <span>D {analytics.draw_rate}%</span>
-                <span>L {analytics.loss_rate}%</span>
-              </div>
-            </div>
+            <h3 className="font-display text-xl tracking-wider text-gray-900 mb-2">
+              Season Heatmap
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Every result this season — left to right chronologically
+            </p>
+            <SeasonHeatmap teamId={teamId} matches={allMatches} />
           </div>
         </div>
       )}
@@ -296,10 +365,21 @@ export default function TeamDetail() {
       {tab === 'history' && (
         <div className="glass-card p-6">
           <h3 className="font-display text-xl tracking-wider text-white mb-5">Club History</h3>
-          <p className="text-sm text-gray-300 leading-relaxed mb-6">{team.description}</p>
-          {totalTrophies > 0 && (
+
+          {team.wiki_summary ? (
             <div>
-              <h4 className="text-xs uppercase tracking-[0.15em] text-gray-500 font-semibold mb-3">Trophy Cabinet</h4>
+              <p className="text-sm text-gray-300 leading-relaxed mb-3">{team.wiki_summary}</p>
+              <p className="text-sm text-gray-400 leading-relaxed">{team.description}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-300 leading-relaxed mb-6">{team.description}</p>
+          )}
+
+          {totalTrophies > 0 && (
+            <div className="mt-6">
+              <h4 className="text-xs uppercase tracking-[0.15em] text-gray-500 font-semibold mb-3">
+                Trophy Cabinet
+              </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {trophies.league > 0 && (
                   <div className="text-center p-4 bg-psl-gold/5 rounded-xl border border-psl-gold/10">
@@ -328,9 +408,15 @@ export default function TeamDetail() {
               </div>
             </div>
           )}
+
           {team.tm_url && (
             <div className="mt-6 pt-4 border-t border-white/5">
-              <a href={team.tm_url} target="_blank" rel="noopener noreferrer" className="text-sm text-psl-gold hover:underline">
+              <a
+                href={team.tm_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-psl-gold hover:underline"
+              >
                 View full profile on Transfermarkt
               </a>
             </div>
@@ -339,7 +425,9 @@ export default function TeamDetail() {
       )}
 
       <div className="mt-8">
-        <Link to="/teams" className="text-sm text-psl-gold hover:underline">Back to all teams</Link>
+        <Link to="/teams" className="text-sm text-psl-gold hover:underline">
+          Back to all teams
+        </Link>
       </div>
     </div>
   );

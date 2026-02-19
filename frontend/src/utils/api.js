@@ -22,4 +22,8 @@ export const api = {
   getFormFire: () => fetchJson('/features/form-fire'),
   getH2H: (a, b) => fetchJson(`/features/h2h?team_a=${a}&team_b=${b}`),
   getPlayer: (id) => fetchJson(`/players/${id}`),
+  getNews: (limit = 15) => fetchJson(`/news/?limit=${limit}`),
+  getLiveScores: () => fetchJson('/matches/live'),
+
+
 };

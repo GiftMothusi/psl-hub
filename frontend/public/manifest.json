@@ -1,0 +1,42 @@
+{
+  "name": "PSL Hub — Betway Premiership",
+  "short_name": "PSL Hub",
+  "description": "Real-time South African Premier Soccer League stats, standings, fixtures and news",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#D4A843",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/psl_favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/psl_favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["sports", "news"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Standings",
+      "short_name": "Table",
+      "description": "View league standings",
+      "url": "/standings",
+      "icons": [{ "src": "/psl_favicon.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Fixtures",
+      "short_name": "Fixtures",
+      "description": "Upcoming matches",
+      "url": "/matches",
+      "icons": [{ "src": "/psl_favicon.png", "sizes": "96x96" }]
+    }
+  ]
+}
