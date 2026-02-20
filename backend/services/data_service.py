@@ -1,14 +1,8 @@
-"""
-PSL Hub Data Service v2 — Production Grade
-Sources: SuperSport, PSL.co.za, Transfermarkt.co.za
-Season: 2025-2026
-
-Provides: Standings, Fixtures, Results, Team Rosters, Player Profiles,
-          Top Scorers, Match Analytics, Team History
-"""
 import httpx
 import logging
 import re
+import json
+import xml.etree.ElementTree as ET
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -26,11 +20,21 @@ TM_IMG = "https://img.a.transfermarkt.technology/portrait/header"
 TM_WAPPEN = "https://tmssl.akamaized.net//images/wappen"
 
 SUPERSPORT_TABLES = "https://supersport.com/football/tour/882fc52f-14b7-4e7c-a259-5ff5d18bde67/tables"
+
+
+NEWS_FEEDS = [
+    "https://www.supersport.com/rss/football/south-africa",
+    "https://www.kickoff.com/rss/news",
+    "https://www.goal.com/feeds/en/news",
+]
+
+WIKI_API = "https://en.wikipedia.org/api/rest_v1/page/summary"
+
+SUPERSPORT_LIVE = "https://supersport.com/football/south-africa/premier-soccer-league/scores-fixtures"
+
 PSL_BASE = "https://www.psl.co.za"
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TEAM DATABASE — All 16 PSL 2025/26 clubs with verified metadata
-# ═══════════════════════════════════════════════════════════════════════════════
+
 TEAMS_DB = {
     "orlando-pirates": {
         "id": "orlando-pirates", "name": "Orlando Pirates", "short": "Pirates", "abbr": "ORL",
@@ -43,6 +47,7 @@ TEAMS_DB = {
         "coach": "Jose Riveiro",
         "description": "Orlando Pirates Football Club, commonly known as the Buccaneers or Ezimnyama Ngenkani, is one of the most successful and popular clubs in South African football. Founded in 1937 in Orlando, Soweto, Pirates are the only South African club to have won the CAF Champions League (1995). The club has a fierce rivalry with Kaizer Chiefs in the famous Soweto Derby.",
         "squad_value": "23.40 mil. EUR", "avg_age": 26.7,
+        "wiki_slug": "Orlando_Pirates_F.C.",
     },
     "mamelodi-sundowns": {
         "id": "mamelodi-sundowns", "name": "Mamelodi Sundowns", "short": "Sundowns", "abbr": "MLS",
@@ -55,6 +60,7 @@ TEAMS_DB = {
         "coach": "Manqoba Mngqithi",
         "description": "Mamelodi Sundowns FC, known as The Brazilians, are the most decorated club in South African football with a record 18 league titles including eight consecutive from 2017-2025. Based in Mamelodi, Pretoria, they won the CAF Champions League in 2016 under Pitso Mosimane. Owned by mining magnate Patrice Motsepe, Sundowns are the wealthiest club in the PSL.",
         "squad_value": "36.35 mil. EUR", "avg_age": 28.2,
+        "wiki_slug": "Mamelodi_Sundowns_F.C.",
     },
     "kaizer-chiefs": {
         "id": "kaizer-chiefs", "name": "Kaizer Chiefs", "short": "Chiefs", "abbr": "KZC",
@@ -67,6 +73,7 @@ TEAMS_DB = {
         "coach": "Nasreddine Nabi",
         "description": "Kaizer Chiefs Football Club, known as Amakhosi, were founded by Kaizer Motaung in 1970 after his return from the NASL in America. They are the best-supported club in South Africa with an estimated 16 million fans. Their rivalry with Orlando Pirates in the Soweto Derby is the biggest fixture in African football. Despite a recent trophy drought, they remain commercially the most powerful club in the PSL.",
         "squad_value": "16.65 mil. EUR", "avg_age": 27.5,
+        "wiki_slug": "Kaizer_Chiefs_F.C.",
     },
     "sekhukhune-united": {
         "id": "sekhukhune-united", "name": "Sekhukhune United", "short": "Sekhukhune", "abbr": "SEK",
@@ -79,6 +86,7 @@ TEAMS_DB = {
         "coach": "Lehlohonolo Seema",
         "description": "Sekhukhune United FC, nicknamed Babina Noko, are a relatively new entrant to the PSL having gained promotion in 2021. Based in Limpopo, they have quickly established themselves as a competitive mid-table side and are having their best season in 2025-26 with veteran striker Bradley Grobler leading the line.",
         "squad_value": "8.23 mil. EUR", "avg_age": 28.2,
+        "wiki_slug": "Sekhukhune_United_F.C.",
     },
     "amazulu-fc": {
         "id": "amazulu-fc", "name": "AmaZulu FC", "short": "AmaZulu", "abbr": "AMZ",
@@ -91,6 +99,7 @@ TEAMS_DB = {
         "coach": "Pablo Franco Martin",
         "description": "AmaZulu FC, known as Usuthu, are one of the oldest clubs in South Africa, founded in 1932 in Durban. They won their last league title in 1972. Under Benni McCarthy they finished 2nd in 2020-21, their highest finish in decades. They play at the iconic Moses Mabhida Stadium.",
         "squad_value": "7.70 mil. EUR", "avg_age": 25.9,
+        "wiki_slug": "AmaZulu_F.C.",
     },
     "durban-city": {
         "id": "durban-city", "name": "Durban City", "short": "Durban City", "abbr": "DUR",
@@ -103,6 +112,7 @@ TEAMS_DB = {
         "coach": "Fadlu Davids",
         "description": "Durban City FC, formerly known as Maritzburg United, rebranded in 2025 after relocating from Pietermaritzburg to Durban. Originally founded as Maritzburg City in 1979, they were promoted to the PSL in 2004 and have been a consistent presence in the top flight. Their 2025-26 season has been impressive under coach Fadlu Davids.",
         "squad_value": "6.80 mil. EUR", "avg_age": 28.2,
+        "wiki_slug": "Durban_City_F.C.",
     },
     "polokwane-city": {
         "id": "polokwane-city", "name": "Polokwane City", "short": "Polokwane", "abbr": "POL",
@@ -115,6 +125,7 @@ TEAMS_DB = {
         "coach": "Phuti Mohafe",
         "description": "Polokwane City FC, nicknamed Rise and Shine, were founded in 2012 and are based in Limpopo province. They gained promotion to the PSL and lost key player Oswin Appollis to Orlando Pirates in the summer of 2025. They are known for developing young talent from the Limpopo region.",
         "squad_value": "5.58 mil. EUR", "avg_age": 26.5,
+        "wiki_slug": "Polokwane_City_F.C.",
     },
     "ts-galaxy": {
         "id": "ts-galaxy", "name": "TS Galaxy", "short": "Galaxy", "abbr": "TSG",
@@ -127,6 +138,7 @@ TEAMS_DB = {
         "coach": "Sead Ramovic",
         "description": "TS Galaxy FC, owned by Tim Sukazi, burst onto the scene in 2019 by winning the Nedbank Cup as a second-division team. Based in Mpumalanga, they gained their PSL status by purchasing Highlands Park's franchise. Their 2025-26 season has been inconsistent.",
         "squad_value": "5.55 mil. EUR", "avg_age": 26.9,
+        "wiki_slug": "TS_Galaxy_F.C.",
     },
     "golden-arrows": {
         "id": "golden-arrows", "name": "Golden Arrows", "short": "Arrows", "abbr": "GOL",
@@ -139,6 +151,7 @@ TEAMS_DB = {
         "coach": "Steve Komphela",
         "description": "Lamontville Golden Arrows, known as Abafana Bes'thende, are a Durban-based club founded in 1943. They won the league in 2009 under Manqoba Mngqithi (now Sundowns coach). Known for developing young talent, they currently boast the league's top scorer Junior Dion in the 2025-26 season.",
         "squad_value": "8.00 mil. EUR", "avg_age": 26.9,
+        "wiki_slug": "Lamontville_Golden_Arrows_F.C.",
     },
     "richards-bay": {
         "id": "richards-bay", "name": "Richards Bay", "short": "Richards Bay", "abbr": "RCH",
@@ -151,6 +164,7 @@ TEAMS_DB = {
         "coach": "Brandon Truter",
         "description": "Richards Bay FC, also known as the Natal Rich Boyz, are based in the coastal town of Richards Bay in KwaZulu-Natal. They were promoted to the PSL in 2022 and are fighting relegation in their third top-flight season.",
         "squad_value": "4.05 mil. EUR", "avg_age": 27.5,
+        "wiki_slug": "Richards_Bay_F.C.",
     },
     "siwelele": {
         "id": "siwelele", "name": "Siwelele", "short": "Siwelele", "abbr": "SIW",
@@ -163,6 +177,7 @@ TEAMS_DB = {
         "coach": "Gavin Hunt",
         "description": "Siwelele Football Club are newcomers to the PSL in 2025-26, having purchased the franchise status from three-time champions SuperSport United. Based in Gqeberha (formerly Port Elizabeth), they are coached by experienced tactician Gavin Hunt. Their first PSL season has been a mid-table affair.",
         "squad_value": "9.08 mil. EUR", "avg_age": 27.5,
+        "wiki_slug": "Siwelele_F.C.",
     },
     "chippa-united": {
         "id": "chippa-united", "name": "Chippa United", "short": "Chippa", "abbr": "CHU",
@@ -175,6 +190,7 @@ TEAMS_DB = {
         "coach": "Kwanele Kopo",
         "description": "Chippa United FC, known as the Chilli Boys, are based in Gqeberha and owned by Siviwe 'Chippa' Mpengesi. Known for frequent coaching changes, they have fought relegation battles in recent seasons. Their 3-0 win over Richards Bay in February 2026 gave them breathing room.",
         "squad_value": "4.25 mil. EUR", "avg_age": 27.8,
+        "wiki_slug": "Chippa_United_F.C.",
     },
     "stellenbosch-fc": {
         "id": "stellenbosch-fc", "name": "Stellenbosch FC", "short": "Stellies", "abbr": "STL",
@@ -187,6 +203,7 @@ TEAMS_DB = {
         "coach": "Steve Barker",
         "description": "Stellenbosch FC, nicknamed Stellies, are a Western Cape club promoted to the PSL in 2019. Under coach Steve Barker they have punched above their weight, finishing in the top half consistently. They lost key players Andre de Jong and Sihle Nduli to Pirates in the 2025 transfer window.",
         "squad_value": "10.60 mil. EUR", "avg_age": 26.1,
+        "wiki_slug": "Stellenbosch_F.C.",
     },
     "marumo-gallants": {
         "id": "marumo-gallants", "name": "Marumo Gallants", "short": "Gallants", "abbr": "GAL",
@@ -199,6 +216,7 @@ TEAMS_DB = {
         "coach": "Dan Malesela",
         "description": "Marumo Gallants FC, formerly TTM and Tshakhuma FC, won the Nedbank Cup in 2021 as an underdog. Based in Limpopo, they have struggled in 2025-26 and are in the relegation zone. The club has undergone multiple name and ownership changes.",
         "squad_value": "3.85 mil. EUR", "avg_age": 27.0,
+        "wiki_slug": "Marumo_Gallants_F.C.",
     },
     "orbit-college": {
         "id": "orbit-college", "name": "Orbit College FC", "short": "Orbit", "abbr": "ORB",
@@ -211,6 +229,7 @@ TEAMS_DB = {
         "coach": "Duran Francis",
         "description": "Orbit College FC are PSL newcomers in 2025-26, promoted from the Motsepe Foundation Championship. Based in Rustenburg, North West Province, their first top-flight season has been difficult with only 14 points from 18 games, sitting in the relegation zone.",
         "squad_value": "2.50 mil. EUR", "avg_age": 26.0,
+        "wiki_slug": "Orbit_College_F.C.",
     },
     "magesi-fc": {
         "id": "magesi-fc", "name": "Magesi FC", "short": "Magesi", "abbr": "MAG",
@@ -223,6 +242,7 @@ TEAMS_DB = {
         "coach": "Clinton Larsen",
         "description": "Magesi FC are another promoted side in 2025-26, based in Limpopo. They famously won the Carling Knockout shortly after promotion, beating Sundowns in the final. Their league form has been poor, however, with just 11 points from 16 games.",
         "squad_value": "2.20 mil. EUR", "avg_age": 25.5,
+        "wiki_slug": "Magesi_F.C.",
     },
 }
 
@@ -241,9 +261,7 @@ def _find_team_by_name(name: str) -> Optional[Dict]:
     return None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# HTTP
-# ═══════════════════════════════════════════════════════════════════════════════
+
 
 async def _fetch(url: str, extra_headers: dict = None) -> Optional[str]:
     hdrs = {**HEADERS, **(extra_headers or {})}
@@ -258,9 +276,6 @@ async def _fetch(url: str, extra_headers: dict = None) -> Optional[str]:
     return None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STANDINGS
-# ═══════════════════════════════════════════════════════════════════════════════
 
 @cached("standings")
 async def get_standings(season: str = None) -> List[Dict]:
@@ -336,9 +351,50 @@ def _verified_standings() -> List[Dict]:
     } for i, (tid,p,w,d,l,gf,ga,gd,pts) in enumerate(data)]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TEAMS
-# ═══════════════════════════════════════════════════════════════════════════════
+def _compute_form(team_id: str, all_matches: List[Dict]) -> Dict:
+    """
+    Derives a team's last-5 form from verified match list.
+    Returns: { last_5: [...], points_from_last5: int, momentum: str }
+    """
+    # Filter to matches this team played and are finished
+    team_matches = [
+        m for m in all_matches
+        if m["status"] == "FT"
+        and (m.get("home_team_id") == team_id or m.get("away_team_id") == team_id)
+    ]
+    # Sort newest first, take last 5
+    recent = sorted(team_matches, key=lambda x: x["date"], reverse=True)[:5]
+
+    form = []
+    for m in recent:
+        is_home = m["home_team_id"] == team_id
+        gf = m["home_goals"] if is_home else m["away_goals"]
+        ga = m["away_goals"] if is_home else m["home_goals"]
+        opponent_id = m["away_team_id"] if is_home else m["home_team_id"]
+
+        # Determine result from this team's perspective
+        result = "W" if gf > ga else "D" if gf == ga else "L"
+        form.append({
+            "result": result,
+            "score": f"{gf}-{ga}",
+            "opponent_id": opponent_id,
+            "opponent_name": TEAMS_DB.get(opponent_id, {}).get("name", "Unknown"),
+            "opponent_logo": TEAMS_DB.get(opponent_id, {}).get("logo", ""),
+            "date": m["date"],
+            "is_home": is_home,
+        })
+
+    # Points earned in last 5: W=3, D=1, L=0
+    pts5 = sum(3 if f["result"] == "W" else 1 if f["result"] == "D" else 0 for f in form)
+
+    # Momentum label thresholds
+    momentum = "🔥 On Fire" if pts5 >= 12 else "📈 Good Form" if pts5 >= 8 else "⚖️ Mixed" if pts5 >= 4 else "📉 Poor Form"
+
+    return {
+        "last_5": form,
+        "points_from_last5": pts5,
+        "momentum": momentum,
+    }
 
 @cached("teams")
 async def get_teams() -> List[Dict]:
@@ -355,7 +411,6 @@ def _team_summary(t: Dict) -> Dict:
         "trophies": t.get("trophies", {}),
     }
 
-
 async def get_team_detail(team_id: str) -> Optional[Dict]:
     team = TEAMS_DB.get(team_id)
     if not team:
@@ -363,14 +418,23 @@ async def get_team_detail(team_id: str) -> Optional[Dict]:
     standings = await get_standings()
     standing = next((s for s in standings if s["team_id"] == team_id), {})
 
-    # Analytics
+    # Analytics (unchanged)
     analytics = _compute_team_analytics(team_id, standing)
+
+    # [NEW] Fetch all matches to compute form
+    all_matches = _verified_recent_matches()
+    form = _compute_form(team_id, all_matches)
+
+    # [NEW] Fetch Wikipedia summary for richer history text
+    wiki_summary = await get_club_wiki_summary(team_id)
 
     return {
         **_team_summary(team),
         "description": team.get("description", ""),
         "standing": standing,
         "analytics": analytics,
+        "form": form,                        # [NEW] form guide data
+        "wiki_summary": wiki_summary or "",  # [NEW] wikipedia enrichment
         "tm_url": f"{TM_BASE}/{team['tm_slug']}/startseite/verein/{team['tm_id']}/saison_id/2025",
     }
 
@@ -410,10 +474,151 @@ def _project_finish(ppg: float) -> str:
     if ppg >= 1.0: return "Mid-table"
     return "Relegation battle"
 
+@cached("fixtures")
+async def get_psl_news(limit: int = 15) -> List[Dict]:
+    """
+    Scrape PSL news from free RSS feeds.
+    No API key required — these are public XML feeds.
+    """
+    psl_keywords = [
+        "psl", "premiership", "pirates", "sundowns", "chiefs", "sekhukhune",
+        "amazulu", "arrows", "chippa", "stellenbosch", "galaxy", "gallants",
+        "polokwane", "siwelele", "magesi", "durban city", "richards bay",
+        "betway", "mofokeng", "grobler", "rayners", "dion"
+    ]
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SQUAD / ROSTER — Scrape from Transfermarkt
-# ═══════════════════════════════════════════════════════════════════════════════
+    articles = []
+    for feed_url in NEWS_FEEDS:
+        html = await _fetch(feed_url)
+        if not html:
+            continue
+        try:
+            root = ET.fromstring(html)
+            for item in root.findall(".//item")[:12]:
+                title = item.findtext("title", "").strip()
+                link = item.findtext("link", "").strip()
+                pub_date = item.findtext("pubDate", "").strip()
+                description = item.findtext("description", "")
+
+                # Strip HTML tags from description
+                desc_clean = re.sub(r'<[^>]+>', '', description).strip()[:220]
+
+                # Only include PSL-relevant articles
+                title_lower = title.lower()
+                if not any(kw in title_lower for kw in psl_keywords):
+                    continue
+
+                # Derive source name from URL
+                source_name = feed_url.split("/")[2].replace("www.", "")
+
+                articles.append({
+                    "title": title,
+                    "link": link,
+                    "date": pub_date,
+                    "summary": desc_clean,
+                    "source": source_name,
+                })
+        except ET.ParseError as e:
+            logger.warning(f"RSS parse error for {feed_url}: {e}")
+            continue
+
+    # Sort by most recent and deduplicate by title
+    seen_titles = set()
+    unique = []
+    for a in articles:
+        if a["title"] not in seen_titles:
+            seen_titles.add(a["title"])
+            unique.append(a)
+
+    return unique[:limit]
+
+
+
+@cached("teams")
+async def get_club_wiki_summary(team_id: str) -> Optional[str]:
+    """
+    Fetch team summary from Wikipedia's free REST API.
+    Endpoint: https://en.wikipedia.org/api/rest_v1/page/summary/{slug}
+    Returns first paragraph of the Wikipedia article.
+    """
+    team = TEAMS_DB.get(team_id)
+    if not team or not team.get("wiki_slug"):
+        return None
+
+    url = f"{WIKI_API}/{team['wiki_slug']}"
+    raw = await _fetch(url)
+    if not raw:
+        return None
+
+    try:
+        data = json.loads(raw)
+        # Wikipedia returns "extract" — the plain text intro paragraph
+        extract = data.get("extract", "")
+        # Trim to a reasonable length for display
+        if len(extract) > 600:
+            # Cut at last full sentence within limit
+            trimmed = extract[:600]
+            last_dot = trimmed.rfind(".")
+            extract = trimmed[:last_dot + 1] if last_dot > 0 else trimmed
+        return extract
+    except json.JSONDecodeError:
+        return None
+
+
+
+async def get_live_scores() -> List[Dict]:
+    """
+    Attempt to scrape live PSL match data from SuperSport.
+    Returns matches with status "LIVE" or "HT". Empty list if none found.
+    """
+    html = await _fetch(SUPERSPORT_LIVE)
+    if not html:
+        return []
+
+    soup = BeautifulSoup(html, "lxml")
+    live_matches = []
+
+    # SuperSport uses data-status attributes on match containers
+    for card in soup.find_all(attrs={"data-status": True}):
+        status_raw = card.get("data-status", "").lower()
+        if status_raw not in ("inprogress", "ht", "live"):
+            continue
+
+        try:
+            # Try to parse team names and scores from card structure
+            team_els = card.find_all(class_=re.compile(r"team|club", re.I))
+            score_el = card.find(class_=re.compile(r"score|result", re.I))
+            minute_el = card.find(class_=re.compile(r"minute|time|clock", re.I))
+
+            if len(team_els) >= 2 and score_el:
+                home_name = team_els[0].get_text(strip=True)
+                away_name = team_els[1].get_text(strip=True)
+                score_text = score_el.get_text(strip=True)
+                scores = re.findall(r'\d+', score_text)
+
+                home_team = _find_team_by_name(home_name)
+                away_team = _find_team_by_name(away_name)
+
+                live_matches.append({
+                    "status": "LIVE" if status_raw == "inprogress" else "HT",
+                    "minute": minute_el.get_text(strip=True) if minute_el else "?",
+                    "home_team_id": home_team["id"] if home_team else home_name.lower(),
+                    "home_team_name": home_team["name"] if home_team else home_name,
+                    "home_team_logo": home_team["logo"] if home_team else "",
+                    "away_team_id": away_team["id"] if away_team else away_name.lower(),
+                    "away_team_name": away_team["name"] if away_team else away_name,
+                    "away_team_logo": away_team["logo"] if away_team else "",
+                    "home_goals": int(scores[0]) if len(scores) >= 1 else 0,
+                    "away_goals": int(scores[1]) if len(scores) >= 2 else 0,
+                })
+        except Exception as e:
+            logger.debug(f"Live score parse error: {e}")
+            continue
+
+    return live_matches
+
+
+
 
 @cached("players")
 async def get_team_roster(team_id: str) -> List[Dict]:
@@ -531,9 +736,7 @@ def _parse_tm_squad(html: str, team: Dict) -> List[Dict]:
     return unique
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PLAYER DETAIL
-# ═══════════════════════════════════════════════════════════════════════════════
+
 
 @cached("players")
 async def get_player_detail(player_id: str) -> Optional[Dict]:
@@ -592,9 +795,6 @@ def _parse_tm_player_profile(html: str) -> Dict:
     return info
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# FIXTURES & RESULTS
-# ═══════════════════════════════════════════════════════════════════════════════
 
 @cached("fixtures")
 async def get_fixtures(status: str = None, team_id: str = None, last: int = None, next_n: int = None) -> List[Dict]:
@@ -659,7 +859,13 @@ def _verified_recent_matches() -> List[Dict]:
 async def get_live_matches() -> List[Dict]:
     today = datetime.utcnow().strftime("%Y-%m-%d")
     fixtures = await get_fixtures()
-    return [m for m in fixtures if m.get("date", "").startswith(today)]
+    # [CHANGE 10 — MODIFIED] Also include scraped live scores
+    scheduled_today = [m for m in fixtures if m.get("date", "").startswith(today)]
+    scraped_live = await get_live_scores()
+    # Merge: prefer scraped live data over static scheduled
+    if scraped_live:
+        return scraped_live
+    return scheduled_today
 
 
 async def get_match_detail(match_id: str) -> Optional[Dict]:
@@ -667,9 +873,6 @@ async def get_match_detail(match_id: str) -> Optional[Dict]:
     return next((m for m in matches if m["id"] == match_id), None)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TOP SCORERS
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def get_top_scorers() -> List[Dict]:
     """Verified from thesouthafrican.com, Feb 2026."""
@@ -696,10 +899,6 @@ async def get_top_scorers() -> List[Dict]:
         })
     return result
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# H2H
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def get_h2h(team_a_id: str, team_b_id: str) -> Dict:
     matches = await get_fixtures()

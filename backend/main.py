@@ -1,8 +1,7 @@
-"""PSL Hub API — Real South African Premier Soccer League data."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
-from routers import standings, teams, matches, players, features
+from routers import standings, teams, matches, players, features, news
 
 app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
 app.add_middleware(
@@ -18,6 +17,7 @@ app.include_router(teams.router, prefix="/api/teams", tags=["teams"])
 app.include_router(matches.router, prefix="/api/matches", tags=["matches"])
 app.include_router(players.router, prefix="/api/players", tags=["players"])
 app.include_router(features.router, prefix="/api/features", tags=["features"])
+app.include_router(news.router, prefix="/api/news", tags=["news"])
 
 @app.get("/api/health")
 async def health():
